@@ -18,7 +18,10 @@ print("""
 ╚═╝░░░░░╚═╝░░╚═╝░╚════╝░░╚════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝
 -- BY: MLBSANS
 -- github: https://github.com/mlbsans
-""")
+-- Tạo server:
+   + 1: ssh -R 80:localhost:8080 nokey@localhost.run
+   + 2: cloudflared tunnel --url http://localhost:8080
+-- Dùng máy ảo: source myenv/bin/activate""")
 
 # Khởi tạo classifier phát hiện khuôn mặt
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
