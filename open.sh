@@ -8,5 +8,8 @@ if [ ! -d "myenv" ]; then
     python3 -m venv myenv
 fi
 
-# Kích hoạt môi trường ảo
+# Hướng dẫn chạy script đúng cách
+echo "Vui lòng chạy script bằng lệnh: source script.sh hoặc . script.sh"
+
+# Kích hoạt môi trường ảo (chỉ hoạt động nếu chạy bằng source)
 source myenv/bin/activate

