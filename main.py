@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from PIL import Image
 import cv2
+from datetime import datetime
 import numpy as np
 import subprocess
 from rich.console import Console
@@ -276,6 +277,7 @@ HTML_PAGE = f"""
 
 @app.route('/')
 def index():
+    print(f"[+] Client IP: {request.remote_addr} | Time: {datetime.utcnow()} UTC")
     return render_template_string(HTML_PAGE)
 
 @app.route('/upload', methods=['POST'])
